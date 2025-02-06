@@ -3,10 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My GitHub Page</title>
+    <title>YouTube to MP3/MP4 Converter</title>
+    
+    <!-- Bootstrap & 10+ Styling Libraries -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .container { max-width: 600px; margin-top: 50px; }
+        .btn { margin-top: 10px; }
+        #status { margin-top: 10px; font-weight: bold; }
+        #downloadSection { display: none; margin-top: 20px; }
+        .player { width: 100%; margin-top: 10px; }
+    </style>
 </head>
 <body>
-  <h1>Welcome to My Website</h1>
-  <p>this is a free website hosted using GitHub Pages.</p>
+    <div class="container text-center">
+        <h2 class="animate__animated animate__fadeInDown">YouTube to MP3/MP4 Converter</h2>
+        
+        <!-- Google Translate Dropdown -->
+        <div id="google_translate_element"></div>
+        
+        <textarea id="youtubeLink" class="form-control" placeholder="Paste YouTube link here..." rows="3"></textarea>
+        
+        <button class="btn btn-primary" onclick="convert('mp3')">Convert to MP3</button>
+        <button class="btn btn-danger" onclick="convert('mp4')">Convert to MP4</button>
+        
+        <p id="status"></p>
+        
+        <div id="downloadSection">
+            <audio id="audioPlayer" controls class="player"></audio>
+            <video id="videoPlayer" controls class="player"></video>
+            <a id="downloadBtn" class="btn btn-success" download>Download</a>
+        </div>
+    </div>
+
+    <!-- JavaScript Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/axios/1.5.0/axios.min.js"></script>
+
+    <!-- Google Translate Script -->
+    <script>
+        function googleTranslateElementInit() {
+            new google.translate.TranslateElement({pageLanguage: 'en'}, 'google_translate_element');
+        }
+    </script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"></script>
+
+    <script>
+        async function convert(format) {
+            let url = document.getElementById("youtubeLink").value.trim();
+            let statusText = document.getElementById("status");
+            let downloadSection = document.getElementById("downloadSection");
+            let downloadBtn = document.getElementById("downloadBtn");
+            let audioPlayer = document.getElementById("audioPlayer");
+            let videoPlayer = document.getElementById("videoPlayer");
+
+            if (!url) {
+                Swal.fire("Error", "Please enter a YouTube link!", "error");
+                return;
+            }
+
+            statusText.innerHTML = `Converting to ${format.toUpperCase()}... ⏳`;
+            downloadSection.style.display = "none";
+
+            try {
+                let response = await axios.post("https://youtube-video-downloader-hj97.onrender.com/convert", {
+                    url: url,
+                    format: format
+                });
+
+                if (response.data.status === "success") {
+                    let fileUrl = `https://youtube-video-downloader-hj97.onrender.com${response.data.file_url}`;
+                    let title = response.data.title.replace(/[^a-zA-Z0-9 ]/g, ""); // Clean title
+                    
+                    downloadBtn.href = fileUrl;
+                    downloadBtn.download = `${title}.${format}`;
+                    downloadBtn.innerText = `Download: ${title}.${format}`;
+
+                    if (format === "mp3") {
+                        audioPlayer.src = fileUrl;
+                        audioPlayer.style.display = "block";
+                        videoPlayer.style.display = "none";
+                    } else {
+                        videoPlayer.src = fileUrl;
+                        videoPlayer.style.display = "block";
+                        audioPlayer.style.display = "none";
+                    }
+
+                    statusText.innerHTML = "Conversion Complete! 🎉";
+                    downloadSection.style.display = "block";
+                } else {
+                    throw new Error(response.data.error);
+                }
+            } catch (error) {
+                Swal.fire("Error", `Failed to convert: ${error.message}`, "error");
+                statusText.innerHTML = "Conversion failed! ❌";
+            }
+        }
+    </script>
 </body>
-</html>>
+</html>
